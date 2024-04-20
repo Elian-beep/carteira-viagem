@@ -1,8 +1,10 @@
+import { IDate } from '../types/IDate';
 import { ISpent } from '../types/ISpent';
 import { db } from './SQLiteDatabase';
 
 const createSpentData = (obj: ISpent) => {
-    return new Promise ((resolve, reject) => {
+    obj.date.setHours(0, 0, 0.0, 0);
+    return new Promise((resolve, reject) => {
         db.transaction(tx => {
             tx.executeSql(
                 'INSERT INTO spents (desc, value, date) VALUES (?, ?, ?);',
@@ -28,7 +30,6 @@ const getSpentData = () => {
                         ...spent,
                         date: new Date(spent.date)
                     }));
-
                     resolve(spentswithDate);
                 }
             );
@@ -40,12 +41,36 @@ const getDateSpentData = () => {
     return new Promise((resolve, reject) => {
         db.transaction(tx => {
             tx.executeSql(
-                'SELECT date FROM spents;',
+                'SELECT DISTINCT date FROM spents;',
                 [],
                 (_, { rows }) => {
-                    const datesStr: string[] = rows._array.map(row => row.date);
-                    const realDates = datesStr.map(date => new Date(date));
-                    resolve(realDates);
+                    let dates = [];
+                    let i;
+                    const datesStr = rows._array;
+                    for (i = 0; i < datesStr.length; i++) {
+                        dates.push(new Date(datesStr[i].date));
+                    }
+                    resolve(dates);
+                }
+            );
+        });
+    });
+}
+
+const getSpentsByDateData = (date: Date) => {
+    return new Promise((resolve, reject) => {
+        db.transaction(tx => {
+            tx.executeSql(
+                'SELECT * FROM spents WHERE date = ?',
+                [date.toISOString()],
+                (_, { rows }) => {
+                    const spents: ISpent[] = rows._array;
+                    const spentswithDate = spents.map(spent => ({
+                        ...spent,
+                        date: new Date(spent.date)
+                    }));
+
+                    resolve(spentswithDate);
                 }
             );
         });
@@ -59,7 +84,7 @@ const updateSpentData = (obj: ISpent) => {
                 "UPDATE spents SET desc=?, value=? WHERE id = ?;",
                 [obj.desc, obj.value, obj.id ? obj.id : 0],
                 (_, { rowsAffected }) => {
-                    if( rowsAffected > 0 ) {
+                    if (rowsAffected > 0) {
                         resolve(rowsAffected);
                     }
                     else reject("[SQLite]  Erro ao atualizar");
@@ -83,4 +108,4 @@ const removeSpentData = (id: number) => {
     });
 }
 
-export { createSpentData, getSpentData, updateSpentData, removeSpentData, getDateSpentData }
+export { createSpentData, getSpentData, updateSpentData, removeSpentData, getDateSpentData, getSpentsByDateData }

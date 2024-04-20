@@ -8,15 +8,15 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Ionicons } from "@expo/vector-icons";
 
 interface Props {
-    onPressCreate: () => void,
-    spentForEdit?: ISpent
+    spentForEdit?: ISpent,
+    onTaskCompleted: () => void
 }
 
-export const Form = ({ onPressCreate, spentForEdit }: Props) => {
+export const Form = ({ spentForEdit, onTaskCompleted }: Props) => {
     const [desc, setDesc] = useState<string>();
     const [valueInput, setValueInput] = useState<string>('0');
     const [valueAmount, setValueAmount] = useState<number>();
-    const [datePicker, setDatePicker] = useState(new Date());
+    const [datePicker, setDatePicker] = useState<Date>(new Date());
     const [isEdit, setIsEdit] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
 
@@ -30,7 +30,7 @@ export const Form = ({ onPressCreate, spentForEdit }: Props) => {
     }, [spentForEdit]);
 
     const onHandleForm = async () => {
-        if (desc && valueAmount) {
+        if (desc && valueAmount && datePicker) {
             if (!isEdit) {
                 await createSpentData({ desc, value: valueAmount, date: datePicker })
                 .then(id => {
@@ -56,7 +56,7 @@ export const Form = ({ onPressCreate, spentForEdit }: Props) => {
                     spentForEdit = undefined;
                 }
             }
-            onPressCreate();
+            onTaskCompleted();
         } else {
             console.log(`[INTERNAL] Ausência nos campos Descrição e Valor`);
         }
@@ -81,11 +81,13 @@ export const Form = ({ onPressCreate, spentForEdit }: Props) => {
             <GroupForm>
                 <AreaCalendar onPress={toggleDatepicker} >
                     <TextDate> 
-                        { datePicker && `${datePicker.getDate() < 10 ? '0'+datePicker.getDate() : datePicker.getDate()} / ${datePicker.getMonth() < 10 ? '0'+datePicker.getMonth() : datePicker.getMonth()} / ${datePicker.getFullYear()}`} 
+                        { datePicker &&
+                            `${datePicker.getDate() < 10 ? '0'+datePicker.getDate() : datePicker.getDate()} / ${datePicker.getMonth() < 10 ? '0'+(datePicker.getMonth()+1) : (datePicker.getMonth()+1)} / ${datePicker.getFullYear()} ` 
+                        } 
                     </TextDate>
                     <Ionicons name="calendar-outline" size={25} color="blue" />
                 </AreaCalendar>
-                {showPicker && <DateTimePicker mode="date" display="spinner" value={datePicker} onChange={(type: any, selectedData: any) => {
+                {showPicker && <DateTimePicker mode="date" display="calendar" value={datePicker} onChange={(type: any, selectedData: any) => {
                     if(type.type === "set"){
                         setDatePicker(new Date(selectedData));
                     }else{
